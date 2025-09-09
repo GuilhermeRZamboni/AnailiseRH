@@ -32,10 +32,12 @@ if arquivo:
     sexo = df["Genero"].dropna().unique()
     sexo_selecionado = st.sidebar.multiselect("Sexo", sorted(sexo), default=sorted(sexo))
     
+    area_opcao = df["Área"].dropna().unique()
+    area_selecionada = st.sidebar.multiselect("Área", sorted(area_opcao), default=sorted(area_opcao))
     df = df[
         (df["Status"].isin(status_selecionado)) & 
-        (df["Genero"].isin(sexo_selecionado))
-
+        (df["Genero"].isin(sexo_selecionado)) &
+        (df["Área"].isin(area_selecionada))
         ]
     #Criar cartões
     col1, col2, col3, col4 = st.columns(4)
@@ -59,19 +61,43 @@ if arquivo:
     with aba2:
         col5, col6 = st.columns(2)
         with col5:
-            salario_area = df.groupby("Área")["Salario"].mean().sort_values()
+            salario_area = df.groupby("Área")["Salario"].median().sort_values()
             fig2, ax2 = plt.subplots()
-            salario_area.plot(kind="barh", color = "Green", ax=ax2)
-            ax2.bar_label(ax2.containers[0], padding = 45)
+            salario_area.plot(kind="barh", color = "darkGreen", ax=ax2)
+            ax2.bar_label(ax2.containers[0], padding = -60, color = "white", fmt="R$ %.2f")
             ax2.set_title("Salário Médio por Área💰")
             ax2.set_ylabel("")
             st.pyplot(fig2)
         with col6:
-            horas_area = df.groupby("Área")["Horas Extras"].mean().sort_values()
+            horas_area = df.groupby("Área")["Horas Extras"].median().sort_values()
             fig3, ax3 = plt.subplots()
-            horas_area.plot(kind="barh", color = "Blue", ax=ax3)
+            horas_area.plot(kind="barh", color = "darkBlue", ax=ax3)
+            ax3.bar_label(ax3.containers[0], padding = -45, color = "white")
             ax3.set_title("Média de Horas Extras por Área⌚")
             ax3.set_ylabel("")
             st.pyplot(fig3)
+    with aba3:
+        contratacoes_por_ano = df["Data de Contratacao"].dt.year.value_counts().sort_index()
+        demissoes_por_ano = df["Data de Demissao"].dropna().dt.year.value_counts().sort_index()
+        fig9, ax9 = plt.subplots(figsize=(5,4))
+        contratacoes_por_ano.plot(kind="line", label= "Contratações", color='DarkBlue', ax=ax9 )
+        demissoes_por_ano.plot(kind="line",  color='Red', label= "Demissões", ax=ax9 )
+        plt.plot(demissoes_por_ano.index, demissoes_por_ano.values, 'r')
+        plt.xlabel('Ano')
+
+        plt.legend()
+        plt.title('Contratações vs Demissões ')
+        
+        st.pyplot(fig9)
+        
+    with aba4:
+        df["Nome Completo"] = df["Nome"] + " " + df["Sobrenome"]
+        df.drop(columns=["Nome","Sobrenome"], inplace=True)
+        busca = st.text_input("Pesquisar por nome completo")
+        if busca:         
+            df_filtrado = df[df["Nome Completo"].str.contains(busca, case=False, na=False)]
+        else:
+            df_filtrado = df
+            st.dataframe(df_filtrado[['Nome Completo', 'Cargo', 'Área', 'Horas Extras', 'Salario', 'Avaliação do Funcionário']])
 else:       
     st.warning("Por favor, carregue um arquivo excel para iniciar a analise")
